@@ -1,0 +1,58 @@
+services:
+  web-aksesoris:
+    build: .
+    container_name: website_aksesoris_virtual
+    restart: always
+    ports:
+      - "8086:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db-aksesoris:
+        condition: service_healthy
+    networks:
+      aksesoris-network:
+        aliases:
+          - website-host
+
+  db-aksesoris:
+    image: mysql:8.0
+    container_name: db_aksesoris_virtual
+    restart: always
+    environment:
+      MYSQL_DATABASE: web_aksesoris
+      MYSQL_ROOT_PASSWORD: password_kamu
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword_kamu"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      aksesoris-network:
+        aliases:
+          - db-server
+
+  portainer:
+    image: portainer/portainer-ce:2.33.1
+    container_name: portainer_management
+    ports:
+      - "9443:9443"
+      - "8888:8000"
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - aksesoris-network
+
+networks:
+  aksesoris-network:
+    driver: bridge
+
+volumes:
+  portainer_data:
+  db_data:
